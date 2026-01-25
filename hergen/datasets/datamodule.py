@@ -105,11 +105,11 @@ if __name__ == "__main__":
     tokenizer = GPT2TokenizerFast.from_pretrained(language_model)
     tokenizer.add_special_tokens(
         {"bos_token": "[BOS]", 'pad_token': '[PAD]'})
-    annotation_file = "/home/r15user2/Documents/CXR_dataset/temporal_CXR/mimic_annotation.json"
-    dataset_dir = "/home/r15user2/Documents/CXR_dataset/mimic_data/2.0.0/files"
+    annotation_file = "/disk1/fywang/CXR_dataset/temporal_CXR/mimic_annotation.json"
+    dataset_dir = "/disk1/fywang/CXR_dataset/mimic_data/2.0.0/files"
     dm = DataModule(TemporalMIMICCXRDataset, tokenizer, annotation_file, dataset_dir,
                     batch_size=4, collate_fn=temporal_collate_fn)
-    for batch in dm.test_dataloader():
+    for batch in dm.val_dataloader():
         break
 
     import ipdb

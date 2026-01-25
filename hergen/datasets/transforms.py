@@ -8,9 +8,6 @@ def get_transforms(split: str = "train", image_size: int = 224, mean=0, std=1):
 
     # # mean=[0.485, 0.456, 0.406]
     # # std=[0.229, 0.224, 0.225]
-    # # For biovil ... 
-    # mean = 0
-    # std = 1
 
     if split == "train":
         image_transforms = transforms.Compose(

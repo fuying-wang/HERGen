@@ -83,10 +83,13 @@ class MIMICCXRDataset(BaseDataset):
                  split: str,
                  tokenizer,
                  image_size: int = 512,
+                 mean: float = 0.,
+                 std: float = 1.,
                  max_length: int = 128,
                  train_data_pct: float = 1.,
                  return_label: bool = False,
-                 return_kg: bool = False) -> None:
+                 return_kg: bool = False
+                 ) -> None:
 
         self.dataset_name = "mimic_cxr"
         self.chen_tokenizer = TokenizerChen(
@@ -96,7 +99,7 @@ class MIMICCXRDataset(BaseDataset):
         self.chen_max_seq_length = 100
 
         super().__init__(annotation_file, dataset_dir, split, tokenizer, image_size,
-                         max_length, train_data_pct, return_label, return_kg)
+                         mean, std, max_length, train_data_pct, return_label, return_kg)
 
     def __getitem__(self, index) -> Dict:
         '''

@@ -30,7 +30,8 @@ class TemporalReportGenerationModule(Cvt2DistilGPT2Module):
                  dataset_dir: str,
                  exp_log_dir: str,
                  visual_model: str = "microsoft/cvt-21-384-22k",
-                 language_model: str = "distilgpt2",
+                 language_model: str = "distilbert/distilgpt2",
+                 freeze_visual_model: bool = False,
                  freeze_text_encoder: bool = True,
                  train_data_pct: float = 1.,
                  max_seq_len: int = 5,
@@ -38,6 +39,8 @@ class TemporalReportGenerationModule(Cvt2DistilGPT2Module):
                  max_length: int = 128,
                  batch_size: int = 16,
                  image_size: int = 512,
+                 mean: float = 0.,
+                 std: float = 1.,
                  num_workers: int = 16,
                  encoder_lr: float = 5e-5,
                  decoder_lr: float = 5e-4,
@@ -54,8 +57,8 @@ class TemporalReportGenerationModule(Cvt2DistilGPT2Module):
         self.num_devices = num_devices
         self.accumulate_grad_batches = accumulate_grad_batches
 
-        super().__init__(dataset_name, annotation_file, dataset_dir, exp_log_dir, visual_model, language_model,
-                         train_data_pct, max_length, batch_size, image_size, num_workers, encoder_lr, decoder_lr,
+        super().__init__(dataset_name, annotation_file, dataset_dir, exp_log_dir, visual_model, freeze_visual_model, language_model,
+                         train_data_pct, max_length, batch_size, image_size, mean, std, num_workers, encoder_lr, decoder_lr,
                          num_beams, gpt2_ckpt_path)
 
         assert dataset_name == "mimic_cxr"
@@ -82,6 +85,7 @@ class TemporalReportGenerationModule(Cvt2DistilGPT2Module):
         self.num_heads = num_heads
 
         self.img_emb_projection = nn.Linear(768, 128)
+        self.text_emb_projection = nn.Linear(768, 128)
 
         # define CXR-BERT
         url = "microsoft/BiomedVLP-CXR-BERT-general"
@@ -168,8 +172,8 @@ class TemporalReportGenerationModule(Cvt2DistilGPT2Module):
                 temporal_image_embs).long()
             attention_mask = tokenized_data['attention_mask'].type_as(
                 temporal_image_embs).long()
-            text_embs = self.text_encoder.get_projected_text_embeddings(
-                input_ids=input_ids, attention_mask=attention_mask)
+            text_features = self.text_encoder(input_ids=input_ids, attention_mask=attention_mask).pooler_output 
+            text_embs = self.text_emb_projection(text_features)
 
             # TODO: soft contrastive loss
             cont_loss = self.infonce_loss(img_embs, text_embs, 0.07)
@@ -387,10 +391,7 @@ class TemporalReportGenerationModule(Cvt2DistilGPT2Module):
 
         optimizer = torch.optim.AdamW(
             self.parameters(), lr=self.encoder_lr)
-
-        # optimizer = torch.optim.AdamW(
-        #     self.visual_temporal_aggregator.parameters(), lr=self.decoder_lr)
-
+        
         warmup_steps = self.train_iters_per_epoch * self.warmup_epochs
         total_steps = self.train_iters_per_epoch * self.max_epochs
 
@@ -435,7 +436,6 @@ class TemporalReportGenerationModule(Cvt2DistilGPT2Module):
             collate_fn=temporal_collate_fn
         )
 
-        # self.train_iters_per_epoch = 1000
         self.train_iters_per_epoch = len(
             self.datamodule.train_dataloader()) // (self.num_devices * self.accumulate_grad_batches)
 

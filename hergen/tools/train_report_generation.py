@@ -35,10 +35,10 @@ def main(hparams: Namespace):
     os.makedirs(ckpt_dir, exist_ok=True)
     callbacks = [
         LearningRateMonitor(logging_interval="step"),
-        ModelCheckpoint(monitor="val_ce_f1_example", dirpath=ckpt_dir,
-                        save_last=True, mode="max", save_top_k=1),
-        EarlyStopping(monitor="val_ce_f1_example", min_delta=0,
-                      patience=10, verbose=False, mode="max")
+        ModelCheckpoint(monitor="val_chen_bleu_4", dirpath=ckpt_dir,
+                        save_last=True, mode="max", save_top_k=3),
+        EarlyStopping(monitor="val_chen_bleu_4", min_delta=0,
+                      patience=5, verbose=False, mode="max")
     ]
     logger_dir = os.path.join(REPO_ROOT_DIR, "data/report_generation/logs")
     os.makedirs(logger_dir, exist_ok=True)
@@ -48,11 +48,11 @@ def main(hparams: Namespace):
         max_epochs=hparams.max_epochs,
         accelerator="gpu",
         accumulate_grad_batches=hparams.accumulate_grad_batches,
-        gradient_clip_val=0.1,
+        gradient_clip_val=1,
         # deterministic=True,
         devices=hparams.num_devices,
         strategy="ddp_find_unused_parameters_true",
-        precision="16",
+        precision="bf16-mixed",
         callbacks=callbacks,
         logger=wandb_logger
     )
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--train_data_pct", type=float, default=1.)
     parser.add_argument("--batch_size", type=int, default=16)
-    parser.add_argument("--num_workers", type=int, default=4)
+    parser.add_argument("--num_workers", type=int, default=8)
     parser.add_argument("--model_name", type=str, default="cvt2distilgpt2",
                         choices=["cvt2distilgpt2", "temporal_decoder", "clgen"])
     parser.add_argument("--dataset_name", type=str, default="mimic_cxr",
@@ -110,9 +110,9 @@ if __name__ == "__main__":
     parser.add_argument("--max_epochs", type=int, default=50)
     parser.add_argument("--accumulate_grad_batches", type=int, default=2)
     parser.add_argument("--max_seq_len", type=int, default=5)
-    parser.add_argument("--freeze_visual_model", action="store_true")
-    parser.add_argument("--encoder_lr", type=float, default=1e-5)
-    parser.add_argument("--decoder_lr", type=float, default=1e-5)
+    parser.add_argument("--freeze_visual_model", action="store_true", default=False)
+    parser.add_argument("--encoder_lr", type=float, default=5e-5)
+    parser.add_argument("--decoder_lr", type=float, default=5e-4)
     hparams = parser.parse_args()
 
     seed_everything(hparams.seed)

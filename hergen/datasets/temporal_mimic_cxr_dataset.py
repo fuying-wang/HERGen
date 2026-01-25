@@ -17,6 +17,8 @@ class TemporalMIMICCXRDataset(MIMICCXRDataset):
                  split: str,
                  tokenizer,
                  image_size: int = 512,
+                 mean: float = 0.,
+                 std: float = 1.,
                  max_length: int = 128,
                  min_seq_length: int = 1,
                  max_seq_length: int = 5,
@@ -25,6 +27,7 @@ class TemporalMIMICCXRDataset(MIMICCXRDataset):
                  return_kg: bool = False) -> None:
 
         super().__init__(annotation_file, dataset_dir, split, tokenizer, image_size,
+                         mean, std,
                          max_length, train_data_pct, return_label, return_kg)
 
         dataset_as_dfs = pd.DataFrame(self.tokenized_dataset)
